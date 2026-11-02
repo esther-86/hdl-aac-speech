@@ -1,0 +1,36 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Testing & Playwright artifacts
+test-results/
+playwright-report/
+blob-report/
+playwright/.cache/
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Private voice audio recordings (keep locally, never push child's raw audio to Git)
+benchmark/*.wav
+benchmark/clips/*.wav
+benchmark/user_clips/*.wav
+
+# Vite local dev
+/dist/
+*.local
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+assets/dist/*

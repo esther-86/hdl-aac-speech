@@ -1,0 +1,202 @@
+[
+  {
+    "id": "clip_01",
+    "start": 1.2,
+    "end": 6.2,
+    "target": "Zoey and Leo went to the big green park",
+    "split": "train",
+    "wav_path": "clips/clip_01.wav"
+  },
+  {
+    "id": "clip_02",
+    "start": 6.7,
+    "end": 12.8,
+    "target": "They saw five yellow ducks swimming in the water",
+    "split": "test",
+    "wav_path": "clips/clip_02.wav"
+  },
+  {
+    "id": "clip_03",
+    "start": 13.5,
+    "end": 18.7,
+    "target": "A little brown puppy jumped over a red ball",
+    "split": "train",
+    "wav_path": "clips/clip_03.wav"
+  },
+  {
+    "id": "clip_04",
+    "start": 20.0,
+    "end": 27.3,
+    "target": "Look at the blue bird flying high in the sky!",
+    "split": "train",
+    "wav_path": "clips/clip_04.wav"
+  },
+  {
+    "id": "clip_05",
+    "start": 27.9,
+    "end": 33.2,
+    "target": "My brother likes to eat sweet strawberries and cheese",
+    "split": "test",
+    "wav_path": "clips/clip_05.wav"
+  },
+  {
+    "id": "clip_06",
+    "start": 34.7,
+    "end": 39.8,
+    "target": "Can we ride the fast train and go down the slide?",
+    "split": "train",
+    "wav_path": "clips/clip_06.wav"
+  },
+  {
+    "id": "clip_07",
+    "start": 41.6,
+    "end": 44.6,
+    "target": "I want water please",
+    "split": "train",
+    "wav_path": "clips/clip_07.wav"
+  },
+  {
+    "id": "clip_08",
+    "start": 45.8,
+    "end": 49.0,
+    "target": "I am hungry, can I have a snack?",
+    "split": "train",
+    "wav_path": "clips/clip_08.wav"
+  },
+  {
+    "id": "clip_09",
+    "start": 51.1,
+    "end": 53.8,
+    "target": "I need to use the bathroom",
+    "split": "train",
+    "wav_path": "clips/clip_09.wav"
+  },
+  {
+    "id": "clip_10",
+    "start": 54.9,
+    "end": 58.1,
+    "target": "Can you help me please?",
+    "split": "test",
+    "wav_path": "clips/clip_10.wav"
+  },
+  {
+    "id": "clip_11",
+    "start": 59.3,
+    "end": 63.6,
+    "target": "I want to play my game on the iPad",
+    "split": "test",
+    "wav_path": "clips/clip_11.wav"
+  },
+  {
+    "id": "clip_12",
+    "start": 64.7,
+    "end": 67.8,
+    "target": "I want to go outside",
+    "split": "train",
+    "wav_path": "clips/clip_12.wav"
+  },
+  {
+    "id": "clip_13",
+    "start": 69.4,
+    "end": 72.2,
+    "target": "Yes, that is what I want",
+    "split": "train",
+    "wav_path": "clips/clip_13.wav"
+  },
+  {
+    "id": "clip_14",
+    "start": 73.3,
+    "end": 77.1,
+    "target": "No thank you, I do not want that",
+    "split": "test",
+    "wav_path": "clips/clip_14.wav"
+  },
+  {
+    "id": "clip_15",
+    "start": 78.1,
+    "end": 82.0,
+    "target": "I am tired and I want to rest",
+    "split": "test",
+    "wav_path": "clips/clip_15.wav"
+  },
+  {
+    "id": "clip_16",
+    "start": 83.0,
+    "end": 86.5,
+    "target": "It is too loud, I need a break",
+    "split": "train",
+    "wav_path": "clips/clip_16.wav"
+  },
+  {
+    "id": "clip_17",
+    "start": 87.2,
+    "end": 89.8,
+    "target": "Can you say that again?",
+    "split": "test",
+    "wav_path": "clips/clip_17.wav"
+  },
+  {
+    "id": "clip_18",
+    "start": 95.3,
+    "end": 98.8,
+    "target": "I love you Mom and Dad",
+    "split": "train",
+    "wav_path": "clips/clip_18.wav"
+  },
+  {
+    "id": "clip_19",
+    "start": 116.3,
+    "end": 120.8,
+    "target": "Mom, Dad, and Brother",
+    "split": "train",
+    "wav_path": "clips/clip_19.wav"
+  },
+  {
+    "id": "clip_20",
+    "start": 125.6,
+    "end": 127.8,
+    "target": "I want Goldfish crackers please",
+    "split": "train",
+    "wav_path": "clips/clip_20.wav"
+  },
+  {
+    "id": "clip_21",
+    "start": 129.5,
+    "end": 131.4,
+    "target": "I want ramen please",
+    "split": "train",
+    "wav_path": "clips/clip_21.wav"
+  },
+  {
+    "id": "clip_22",
+    "start": 138.7,
+    "end": 140.4,
+    "target": "I want French fries please",
+    "split": "train",
+    "wav_path": "clips/clip_22.wav"
+  },
+  {
+    "id": "clip_23",
+    "start": 140.4,
+    "end": 143.2,
+    "target": "I want a hamburger please",
+    "split": "train",
+    "wav_path": "clips/clip_23.wav"
+  },
+  {
+    "id": "clip_24",
+    "start": 152.2,
+    "end": 154.3,
+    "target": "I want lettuce please",
+    "split": "train",
+    "wav_path": "clips/clip_24.wav"
+  },
+  {
+    "id": "clip_25",
+    "start": 155.2,
+    "end": 157.0,
+    "target": "I want meat please",
+    "split": "train",
+    "wav_path": "clips/clip_25.wav"
+  }
+]
