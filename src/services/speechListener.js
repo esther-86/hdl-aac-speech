@@ -291,14 +291,17 @@ export class SpeechListener {
 
     this.stop();
 
-    // 1. ALWAYS deliver the heard transcript immediately to onFinal so "What I Heard You Say" updates right away!
+    // 1. ALWAYS deliver the heard transcript immediately to onFinal so "What I Heard You Say" appears right away!
     if (textToUse) {
       this.onFinal(textToUse, 'child', features, wavBlob);
-    } else if (wavBlob && wavBlob.size > 1000 && features.hasVoice) {
-      // 2. If browser SpeechRecognition heard nothing at all, fall back to server WAV transcription
-      this.onAudioRecorded(wavBlob, '', features);
-    } else if (features.hasVoice) {
+    } else if (features.hasVoice && (!wavBlob || wavBlob.size <= 1000)) {
       this.onFinal(features.acousticCode, 'child', features, wavBlob);
+    }
+
+    // 2. ALSO always send the full start-to-stop WAV recording to onAudioRecorded so it recalibrates
+    //    into "What I Think You Mean" using the unbroken recording across any "uh" fillers or pauses!
+    if (wavBlob && wavBlob.size > 1000 && features.hasVoice) {
+      this.onAudioRecorded(wavBlob, textToUse, features);
     }
   }
 
@@ -588,17 +591,21 @@ export class SpeechListener {
         this.accumulatedFinalChunks.push(this.currentInterimChunk.trim());
         this.currentInterimChunk = '';
       }
-      // 2. Immediately restart SpeechRecognition if she hasn't pushed "Done" yet
+      // 2. Immediately restart a fresh SpeechRecognition instance if she hasn't pushed "Done" yet
+      //    (Creating a fresh instance avoids Chrome's bug where .start() on a paused/uh-ended instance silently stalls)
       if (this.isListening && this.shouldListen && !this.finalDeliveredForShot) {
         setTimeout(() => {
-          if (this.isListening && this.shouldListen && !this.finalDeliveredForShot && this.recognition) {
+          if (this.isListening && this.shouldListen && !this.finalDeliveredForShot) {
             try {
-              this.recognition.start();
+              this.initRecognition();
+              if (this.recognition) {
+                this.recognition.start();
+              }
             } catch (e) {
               // ignore
             }
           }
-        }, 50);
+        }, 40);
       }
     };
   }

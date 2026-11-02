@@ -198,5 +198,107 @@
     "target": "I want meat please",
     "split": "train",
     "wav_path": "clips/clip_25.wav"
+  },
+  {
+    "id": "clip_26",
+    "target": "Mrs. Smith, I have a question about our reading book.",
+    "split": "train",
+    "wav_path": "user_clips/utt_20261102_032355_751.wav"
+  },
+  {
+    "id": "clip_27",
+    "target": "Can you help me solve this math problem?",
+    "split": "test",
+    "wav_path": "user_clips/utt_20261102_032429_908.wav"
+  },
+  {
+    "id": "clip_28",
+    "target": "The answer to the fraction question is three.",
+    "split": "test",
+    "wav_path": "user_clips/utt_20261102_032529_536.wav"
+  },
+  {
+    "id": "clip_29",
+    "target": "The answer to the fraction question is three.",
+    "split": "train",
+    "wav_path": "user_clips/utt_20261102_034434_267.wav"
+  },
+  {
+    "id": "clip_30",
+    "target": "We are learning about green plants and sunlight in science.",
+    "split": "test",
+    "wav_path": "user_clips/utt_20261102_034454_602.wav"
+  },
+  {
+    "id": "clip_31",
+    "target": "Water turns into clouds when it gets warm.",
+    "split": "train",
+    "wav_path": "user_clips/utt_20261102_034510_301.wav"
+  },
+  {
+    "id": "clip_32",
+    "target": "A triangle has three sides, and a rectangle has four.",
+    "split": "test",
+    "wav_path": "user_clips/utt_20261102_034525_655.wav"
+  },
+  {
+    "id": "clip_33",
+    "target": "I need a pencil, paper, and scissors for my project.",
+    "split": "test",
+    "wav_path": "user_clips/utt_20261102_034538_395.wav"
+  },
+  {
+    "id": "clip_34",
+    "target": "My favorite subject in school is art and reading.",
+    "split": "train",
+    "wav_path": "user_clips/utt_20261102_034603_670.wav"
+  },
+  {
+    "id": "clip_35",
+    "target": "Can I go to the library to pick a new book?",
+    "split": "test",
+    "wav_path": "user_clips/utt_20261102_034625_514.wav"
+  },
+  {
+    "id": "clip_36",
+    "target": "Please wait for me, I am still writing my sentence.",
+    "split": "test",
+    "wav_path": "user_clips/utt_20261102_034641_369.wav"
+  },
+  {
+    "id": "clip_37",
+    "target": "My group finished the science experiment together.",
+    "split": "train",
+    "wav_path": "user_clips/utt_20261102_034658_343.wav"
+  },
+  {
+    "id": "clip_38",
+    "target": "The main character in the story was very brave.",
+    "split": "test",
+    "wav_path": "user_clips/utt_20261102_034720_566.wav"
+  },
+  {
+    "id": "clip_39",
+    "target": "What page are we supposed to read today?",
+    "split": "train",
+    "wav_path": "user_clips/utt_20261102_034736_521.wav"
+  },
+  {
+    "id": "clip_40",
+    "target": "I know the answer, can I share it with the class?",
+    "split": "test",
+    "wav_path": "user_clips/utt_20261102_034757_517.wav"
+  },
+  {
+    "id": "clip_41",
+    "target": "Can I sit with my friend at lunch today?",
+    "split": "train",
+    "wav_path": "user_clips/utt_20261102_034813_958.wav"
+  },
+  {
+    "id": "clip_42",
+    "target": "I finished my worksheet, what should I do now?",
+    "split": "test",
+    "wav_path": "user_clips/utt_20261102_034830_595.wav"
   }
 ]

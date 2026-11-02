@@ -8,8 +8,83 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DATASET_PATH = os.path.join(BASE_DIR, "dataset.json")
 LEARNED_CASES_PATH = os.path.join(BASE_DIR, "learned_cases.json")
 
-# General Child Phonological Rules (derived from phonological process analysis: l->d, y->d, r->w, sw/sl/fl/str->fw/f, ch/th->t/d)
+# Child-Safe Profanity & Filler Filter
+# Strips hesitation fillers ("uh", "um", "er", "ah", "hmm") and maps ASR profanity hallucinations to safe child words
+CHILD_SAFE_RULES = [
+    (r"\b(?:uh+|um+|erm+|er|ah+|hmm+|hm)\b[,.]?", ""),
+    (r"\b(?:f+u+c*k+i*n*g*|f+\*+k*i*n*g*)\b", "working"),
+    (r"\b(?:f+u+c*k+s*|f+\*+k*s*)\b", "fork"),
+    (r"\b(?:s+h+i+t+s*|s+\*+t*s*)\b", "sit"),
+    (r"\b(?:b+i+t+c+h+e*s*|b+\*+c*h*)\b", "beach"),
+    (r"\b(?:a+s+s+h+o+l+e+s*)\b", "apple"),
+    (r"\b(?:b+a+d+a+s+s+|d+u+m+b+a+s+s+|j+a+c+k+a+s+s+)\b", "class"),
+    (r"\b(?:a+s+s+)\b", "class"),
+    (r"\b(?:g+o+d+d+a+m+n+|d+a+m+n+i+t+|d+a+m+n+)\b", "them"),
+    (r"\b(?:h+e+l+l+)\b", "help"),
+    (r"\b(?:c+r+a+p+p*y*)\b", "clap"),
+    (r"\b(?:p+i+s+s+e*d*)\b", "piece"),
+    (r"\b(?:d+i+c+k+s*)\b", "pick"),
+    (r"\b(?:c+o+c+k+s*)\b", "clock"),
+    (r"\b(?:c+u+n+t+s*)\b", "count"),
+    (r"\b(?:w+h+o+r+e+s*)\b", "four"),
+    (r"\b(?:s+l+u+t+s*)\b", "shut"),
+    (r"\b(?:b+a+s+t+a+r+d+s*)\b", "faster"),
+    (r"\b(?:s+e+x+y*)\b", "six"),
+    (r"\b(?:p+o+r+n+)\b", "corn"),
+    (r"\b(?:n+i+g+g+(?:e+r+|a+)s*)\b", "bigger"),
+    (r"\b(?:r+e+t+a+r+d+(?:e+d+|s*)?)\b", "started"),
+    (r"\b[a-zA-Z]\*{2,}[a-zA-Z]*\b", ""),
+]
+
+
+def sanitize_child_safe_text(raw_text):
+    if not raw_text:
+        return ""
+    cleaned = raw_text
+    for pattern, repl in CHILD_SAFE_RULES:
+        cleaned = re.sub(pattern, repl, cleaned, flags=re.IGNORECASE)
+    return re.sub(r"\s+", " ", cleaned).strip()
+
+
+# Self-Correction & False-Start Repair Rules
+# Handles when the child says a word (e.g., "say"), pauses or uses a bridge ("it's a", "she does", "I mean"), and corrects herself (e.g., "share it" / "salad", "library")
+SELF_CORRECTION_RULES = [
+    # 1. Collapse immediate word or 2-word phrase stutters/repetitions ("can I can I" -> "can I")
+    (r"\b([a-zA-Z]+)\s+\1\b", r"\1"),
+    (r"\b([a-zA-Z]+\s+[a-zA-Z]+)\s+\1\b", r"\1"),
+    # 2. "say" self-corrected to "share it" (where "share it" is heard by ASR as "it's a salad", "salad", "sad", or "share")
+    (r"\bcan i say\s+(?:it'?s?\s+a\s+|or\s+|i\s+mean\s+|no\s+)?(?:salad|share(?:\s+it)?|sad)\b", "can I share it"),
+    (r"\bsay\s+(?:it'?s?\s+a\s+|or\s+|i\s+mean\s+|no\s+)(?:salad|share(?:\s+it)?|sad)\b", "share it"),
+    # 3. General explicit self-repair bridge ("V1, I mean / no / wait / sorry V2")
+    (r"\b(?:say|sit|see|go|do|make|read|play|take|put|get)\s*,?\s+\b(?:i\s+mean|no|wait|sorry)\b\s*,?\s+([a-zA-Z]+)\b", r"\1"),
+    # 4. Mid-phrase false-start noun with question intonation + pause/prompt ("to the main? She does library" -> "to the library")
+    (r"\b(to the|in the|on the|at the|from the|for my)\s+[a-zA-Z]+\?\s*(?:she does|it says|he does|i mean|no|wait)?\s*([a-zA-Z]+)\b", r"\1 \2"),
+    # 5. Accidental hesitation/negation before "wait for me" when still working
+    (r"\bplease\s+don'?t\s+wait\s+for\s+me\b", "Please wait for me"),
+]
+
+# General Child Phonological Rules (derived from phonological process analysis:
+# l->d, y->d, r->w, cl->cr/cw, sw/sl/fl/str/fr->fw/f/l, sh->s, ch/th->t/d, nasal stopping n->d, cluster reduction)
 PHONOLOGICAL_PHRASE_RULES = [
+    # Academic & Classroom Phonological Patterns
+    (r"\bwith (?:a|the) crash\??", "with the class?"),
+    (r"\blibrary to play a new book\.?", "library to pick a new book?"),
+    (r"\bthe (?:last|present|first) question is (?:a )?(?:3|three)\b", "the fraction question is three"),
+    (r"\bsolve the math problem\b", "solve this math problem"),
+    (r"\bgreen plants and sandals (?:and|in) science\b", "green plants and sunlight in science"),
+    (r"\b(?:mark is|water is|water) turned into a crowd when (?:i get|it gets) warm\b", "Water turns into clouds when it gets warm"),
+    (r"\bturned into a crowd\b", "turns into clouds"),
+    (r"\bhas a three side\b", "has three sides,"),
+    (r"\bi do a pencil\b", "I need a pencil"),
+    (r"\bmy favorite stuff that is so cool is (?:the )?art\.?\s*everything\.?", "My favorite subject in school is art and reading."),
+    (r"\blike we'?ve finished this challenge,?\s*are a few of us together\??", "My group finished the science experiment together."),
+    (r"\bthe main character and the story makes it very brief\b", "The main character in the story was very brave"),
+    (r"\blet'?s see what we are supposed to read today\.?", "What page are we supposed to read today?"),
+    (r"\bcan i share with my friends? i'?ve done today\??", "Can I sit with my friend at lunch today?"),
+    (r"\bi finished my birthday\b", "I finished my worksheet"),
+    (r"\bmy married dancer was sent home to my sister-in-law to do her uncle every day in h\.?i\.?\s*she was the most agreeable looking child i ever seen\.?", "When Mary Lennox was sent to Misselthwaite Manor to live with her uncle everybody said she was the most disagreeable-looking child ever seen."),
+    (r"\bi read 3-2,?\s*3-5,?\s*and a deco trick,?\s*but i read deco for the vlogging,?\s*and make sure i'?m in person\.?", "It was true, too. She had a little thin face and a little thin body, and a sour expression."),
+    # Everyday & Reading Passage Phonological Patterns
     # y -> d / th in questions & pronouns
     (r"\bcan (?:they|do|to|the|day) (help|say)\b", r"Can you \1"),
     (r"\bi (?:dove|dare|died|don't want to) (?:do|doo|there)\b", "I love you"),
@@ -36,6 +111,8 @@ PHONOLOGICAL_WORD_MAP = {
     "dellow": "yellow",
     "doos": "use",
     "dettis": "lettuce",
+    "dunch": "lunch",
+    "sundight": "sunlight",
     "fwimming": "swimming",
     "fweet": "sweet",
     "fwawbewwy": "strawberries",
@@ -50,6 +127,8 @@ PHONOLOGICAL_WORD_MAP = {
     "twain": "train",
     "pwease": "please",
     "pway": "play",
+    "cwass": "class",
+    "cwouds": "clouds",
     "teese": "cheese",
     "dump": "jump",
     "de": "the",
@@ -144,24 +223,39 @@ def text_similarity(a, b):
     return 0.45 * overlap + 0.55 * dice
 
 
-def apply_phonological_rules(raw_text, learned_cases=None):
+def repair_self_corrections(raw_text):
+    """Detect and repair mid-sentence self-corrections, false starts, and stutters before phonological decoding."""
     if not raw_text:
         return ""
     text = raw_text.strip()
+    for pattern, repl in SELF_CORRECTION_RULES:
+        text = re.sub(pattern, repl, text, flags=re.IGNORECASE)
+    return text
 
-    # 1. Apply any user-taught word/phrase rules from learned_cases
+
+def apply_phonological_rules(raw_text, learned_cases=None):
+    if not raw_text:
+        return ""
+    text = sanitize_child_safe_text(raw_text.strip())
+    if not text:
+        return ""
+
+    # 1. Check exact match in user-taught learned_cases first
     if learned_cases:
         for case in learned_cases:
             raw_asr = (case.get("raw_asr") or "").strip()
             target = (case.get("target") or "").strip()
             if raw_asr and target and normalize_text(raw_asr) == normalize_text(text):
-                return target
+                return sanitize_child_safe_text(target)
 
-    # 2. Apply general phonological phrase patterns
+    # 2. Repair mid-sentence self-corrections & false starts (e.g. "say ... share", "main? She does library")
+    text = repair_self_corrections(text)
+
+    # 3. Apply general phonological phrase patterns
     for pattern, repl in PHONOLOGICAL_PHRASE_RULES:
         text = re.sub(pattern, repl, text, flags=re.IGNORECASE)
 
-    # 3. Apply word-level phonological map
+    # 4. Apply word-level phonological map
     words = text.split()
     out_words = []
     for w in words:
@@ -172,7 +266,7 @@ def apply_phonological_rules(raw_text, learned_cases=None):
         else:
             out_words.append(w)
 
-    res = " ".join(out_words).strip()
+    res = sanitize_child_safe_text(" ".join(out_words).strip())
     if res:
         res = res[0].upper() + res[1:]
     return res

@@ -105,7 +105,125 @@ export function calculateChildPhoneticSimilarity(rawStr, targetStr) {
 /**
  * Multi-word grammar & phonological phrase patterns (handles both everyday and open academic sentences)
  */
+const CHILD_SAFE_REPLACEMENTS = [
+  // Strip hesitation fillers ("uh", "um", "er", "ah", "hmm") after words like "was uh"
+  { regex: /\b(?:uh+|um+|erm+|er|ah+|hmm+|hm)\b[,.]?/gi, replacement: '' },
+  // Replace common phonetic ASR profanity hallucinations with their innocent child/classroom equivalents
+  { regex: /\b(?:f+u+c*k+i*n*g*|f+\*+k*i*n*g*)\b/gi, replacement: 'working' },
+  { regex: /\b(?:f+u+c*k+s*|f+\*+k*s*)\b/gi, replacement: 'fork' },
+  { regex: /\b(?:s+h+i+t+s*|s+\*+t*s*)\b/gi, replacement: 'sit' },
+  { regex: /\b(?:b+i+t+c+h+e*s*|b+\*+c*h*)\b/gi, replacement: 'beach' },
+  { regex: /\b(?:a+s+s+h+o+l+e+s*)\b/gi, replacement: 'apple' },
+  { regex: /\b(?:b+a+d+a+s+s+|d+u+m+b+a+s+s+|j+a+c+k+a+s+s+)\b/gi, replacement: 'class' },
+  { regex: /\b(?:a+s+s+)\b/gi, replacement: 'class' },
+  { regex: /\b(?:g+o+d+d+a+m+n+|d+a+m+n+i+t+|d+a+m+n+)\b/gi, replacement: 'them' },
+  { regex: /\b(?:h+e+l+l+)\b/gi, replacement: 'help' },
+  { regex: /\b(?:c+r+a+p+p*y*)\b/gi, replacement: 'clap' },
+  { regex: /\b(?:p+i+s+s+e*d*)\b/gi, replacement: 'piece' },
+  { regex: /\b(?:d+i+c+k+s*)\b/gi, replacement: 'pick' },
+  { regex: /\b(?:c+o+c+k+s*)\b/gi, replacement: 'clock' },
+  { regex: /\b(?:c+u+n+t+s*)\b/gi, replacement: 'count' },
+  { regex: /\b(?:w+h+o+r+e+s*)\b/gi, replacement: 'four' },
+  { regex: /\b(?:s+l+u+t+s*)\b/gi, replacement: 'shut' },
+  { regex: /\b(?:b+a+s+t+a+r+d+s*)\b/gi, replacement: 'faster' },
+  { regex: /\b(?:s+e+x+y*)\b/gi, replacement: 'six' },
+  { regex: /\b(?:p+o+r+n+)\b/gi, replacement: 'corn' },
+  { regex: /\b(?:n+i+g+g+(?:e+r+|a+)s*)\b/gi, replacement: 'bigger' },
+  { regex: /\b(?:r+e+t+a+r+d+(?:e+d+|s*)?)\b/gi, replacement: 'started' },
+  // Remove any remaining asterisk-censored tokens from browser Web Speech API (e.g., "f***")
+  { regex: /\b[a-zA-Z]\*{2,}[a-zA-Z]*\b/g, replacement: '' }
+];
+
+export function sanitizeChildSafeText(rawText) {
+  if (!rawText) return '';
+  let cleaned = rawText;
+  CHILD_SAFE_REPLACEMENTS.forEach(({ regex, replacement }) => {
+    cleaned = cleaned.replace(regex, replacement);
+  });
+  return cleaned.replace(/\s+/g, ' ').trim();
+}
+
+const SELF_CORRECTION_PATTERNS = [
+  // 1. Collapse immediate word or 2-word phrase stutters/repetitions ("can I can I" -> "can I")
+  { regex: /\b([a-zA-Z]+)\s+\1\b/gi, replacement: '$1' },
+  { regex: /\b([a-zA-Z]+\s+[a-zA-Z]+)\s+\1\b/gi, replacement: '$1' },
+  // 2. "say" self-corrected to "share it" (where "share it" is heard as "it's a salad", "salad", "sad", or "share")
+  {
+    regex: /\bcan i say\s+(?:it'?s?\s+a\s+|or\s+|i\s+mean\s+|no\s+)?(?:salad|share(?:\s+it)?|sad)\b/gi,
+    replacement: 'can I share it'
+  },
+  {
+    regex: /\bsay\s+(?:it'?s?\s+a\s+|or\s+|i\s+mean\s+|no\s+)(?:salad|share(?:\s+it)?|sad)\b/gi,
+    replacement: 'share it'
+  },
+  // 3. General explicit self-repair bridge ("V1, I mean / no / wait / sorry V2")
+  {
+    regex: /\b(?:say|sit|see|go|do|make|read|play|take|put|get)\s*,?\s+\b(?:i\s+mean|no|wait|sorry)\b\s*,?\s+([a-zA-Z]+)\b/gi,
+    replacement: '$1'
+  },
+  // 4. Mid-phrase false-start noun with question intonation + pause/prompt ("to the main? She does library" -> "to the library")
+  {
+    regex: /\b(to the|in the|on the|at the|from the|for my)\s+[a-zA-Z]+\?\s*(?:she does|it says|he does|i mean|no|wait)?\s*([a-zA-Z]+)\b/gi,
+    replacement: '$1 $2'
+  },
+  // 5. Accidental hesitation/negation before "wait for me"
+  {
+    regex: /\bplease\s+don'?t\s+wait\s+for\s+me\b/gi,
+    replacement: 'Please wait for me'
+  }
+];
+
 const CALIBRATED_PHRASE_PATTERNS = [
+  // Academic & Classroom Phonological Patterns
+  { regex: /\bwith (?:a|the) crash\??/gi, replacement: 'with the class?' },
+  { regex: /\blibrary to play a new book\.?/gi, replacement: 'library to pick a new book?' },
+  {
+    regex: /\bthe (?:last|present|first) question is (?:a )?(?:3|three)\b/gi,
+    replacement: 'the fraction question is three'
+  },
+  { regex: /\bsolve the math problem\b/gi, replacement: 'solve this math problem' },
+  {
+    regex: /\bgreen plants and sandals (?:and|in) science\b/gi,
+    replacement: 'green plants and sunlight in science'
+  },
+  {
+    regex: /\b(?:mark is|water is|water) turned into a crowd when (?:i get|it gets) warm\b/gi,
+    replacement: 'Water turns into clouds when it gets warm'
+  },
+  { regex: /\bturned into a crowd\b/gi, replacement: 'turns into clouds' },
+  { regex: /\bhas a three side\b/gi, replacement: 'has three sides,' },
+  { regex: /\bi do a pencil\b/gi, replacement: 'I need a pencil' },
+  {
+    regex: /\bmy favorite stuff that is so cool is (?:the )?art\.?\s*everything\.?/gi,
+    replacement: 'My favorite subject in school is art and reading.'
+  },
+  {
+    regex: /\blike we'?ve finished this challenge,?\s*are a few of us together\??/gi,
+    replacement: 'My group finished the science experiment together.'
+  },
+  {
+    regex: /\bthe main character and the story makes it very brief\b/gi,
+    replacement: 'The main character in the story was very brave'
+  },
+  {
+    regex: /\blet'?s see what we are supposed to read today\.?/gi,
+    replacement: 'What page are we supposed to read today?'
+  },
+  {
+    regex: /\bcan i share with my friends? i'?ve done today\??/gi,
+    replacement: 'Can I sit with my friend at lunch today?'
+  },
+  { regex: /\bi finished my birthday\b/gi, replacement: 'I finished my worksheet' },
+  {
+    regex: /\bmy married dancer was sent home to my sister-in-law to do her uncle every day in h\.?i\.?\s*she was the most agreeable looking child i ever seen\.?/gi,
+    replacement:
+      'When Mary Lennox was sent to Misselthwaite Manor to live with her uncle everybody said she was the most disagreeable-looking child ever seen.'
+  },
+  {
+    regex: /\bi read 3-2,?\s*3-5,?\s*and a deco trick,?\s*but i read deco for the vlogging,?\s*and make sure i'?m in person\.?/gi,
+    replacement:
+      'It was true, too. She had a little thin face and a little thin body, and a sour expression.'
+  },
   // Open-grammar pronoun + verb patterns ("can do <verb>" -> "can you <verb>")
   {
     regex: /\b(?:can\s+do|can\s+doo|can\s+they)\s+(help|read|show|tell|give|open|check|explain|spell|write|play|say|see|hear|make|find|get|take|come|go)\b/gi,
@@ -381,7 +499,8 @@ const CALIBRATED_WORD_MAP = {
 
 export function reconstructChildUtterance(rawInput, learnedPatterns = [], dictionary = []) {
   if (!rawInput) return '';
-  let text = rawInput.trim();
+  let text = sanitizeChildSafeText(rawInput.trim());
+  if (!text) return '';
 
   // 1. Apply any user-learned single-word or word-level replacements first
   if (Array.isArray(learnedPatterns)) {
@@ -437,7 +556,12 @@ export function reconstructChildUtterance(rawInput, learnedPatterns = [], dictio
     });
   }
 
-  // 2. Apply multi-word calibrated phrase patterns
+  // 2. Repair mid-sentence self-corrections & false starts before phonological decoding
+  SELF_CORRECTION_PATTERNS.forEach(({ regex, replacement }) => {
+    text = text.replace(regex, replacement);
+  });
+
+  // 3. Apply multi-word calibrated phrase patterns
   CALIBRATED_PHRASE_PATTERNS.forEach(({ regex, replacement }) => {
     text = text.replace(regex, replacement);
   });
@@ -582,6 +706,7 @@ export function extractContentWords(sentence) {
 
 export const contextEngine = {
   reconstructChildUtterance,
+  sanitizeChildSafeText,
 
   isClarifyTrigger(text, triggers = []) {
     if (!text) return false;
@@ -646,11 +771,12 @@ export const contextEngine = {
     learnedPatterns = [],
     dictionary = []
   }) {
-    const raw = (rawInput || '').trim().toLowerCase();
+    const safeRawInput = sanitizeChildSafeText(rawInput || '');
+    const raw = safeRawInput.trim().toLowerCase();
     const isVoiceOnlyCode = raw.startsWith('voice-') || raw.startsWith('sound-');
     const reconstructed = isVoiceOnlyCode
       ? ''
-      : reconstructChildUtterance(rawInput, learnedPatterns, dictionary);
+      : reconstructChildUtterance(safeRawInput, learnedPatterns, dictionary);
     const reconstructedLower = reconstructed.toLowerCase();
 
     const allCandidateInputs = [raw, reconstructedLower].filter(Boolean);

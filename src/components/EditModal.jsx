@@ -75,9 +75,11 @@ export default function EditModal({
         {/* Form Body */}
         <form onSubmit={handleSubmit} className="p-5 space-y-4">
           {rawHeard && (
-            <div className="bg-slate-950 p-3 rounded-xl border border-slate-800 flex items-center justify-between">
+            <div className="bg-slate-950 p-3 rounded-xl border border-slate-800 flex flex-col gap-1 max-h-[80px] overflow-y-auto">
               <span className="text-xs text-slate-400">Heard Sound / Phrase:</span>
-              <span className="text-sm font-mono font-bold text-sky-400">"{rawHeard}"</span>
+              <span className="text-xs sm:text-sm font-mono font-bold text-sky-400 break-words">
+                "{rawHeard}"
+              </span>
             </div>
           )}
 
@@ -92,7 +94,7 @@ export default function EditModal({
               placeholder="Type the intended sentence here..."
               rows={3}
               autoFocus
-              className="w-full bg-slate-950 border-2 border-slate-700 focus:border-amber-400 rounded-2xl p-4 text-xl font-bold text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-amber-400/20"
+              className="w-full bg-slate-950 border-2 border-slate-700 focus:border-amber-400 rounded-2xl p-3.5 text-base sm:text-lg font-semibold leading-relaxed text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-amber-400/20 max-h-[180px] overflow-y-auto"
             />
           </div>
 

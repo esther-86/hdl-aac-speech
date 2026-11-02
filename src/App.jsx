@@ -204,8 +204,9 @@ export default function App() {
       onSpeakerDetected: (speaker) => setCurrentSpeaker(speaker),
       onInterim: (interim) => {
         const { learnedPatterns: curPats, dictionary: curDict } = latestStateRef.current;
-        const liveRecon = contextEngine.reconstructChildUtterance(interim, curPats, curDict);
-        setInterimText(liveRecon || interim);
+        const safeInterim = contextEngine.sanitizeChildSafeText(interim);
+        const liveRecon = contextEngine.reconstructChildUtterance(safeInterim, curPats, curDict);
+        setInterimText(liveRecon || safeInterim);
       },
       onStatusChange: (listening, err) => {
         setIsListening(listening);
@@ -239,10 +240,9 @@ export default function App() {
     } = latestStateRef.current;
 
     if (!curProf) return;
-    const cleanText = (text || '').trim();
+    const cleanText = contextEngine.sanitizeChildSafeText((text || '').trim());
     if (!cleanText) return;
 
-    transcriptionSeqRef.current += 1;
     setRawHeard(cleanText);
     setLastAudioFeatures(audioFeatures);
     if (wavBlob) {
@@ -315,14 +315,15 @@ export default function App() {
       }
 
       if (aiResult && aiResult.primary) {
+        const safePrimary = contextEngine.sanitizeChildSafeText(aiResult.primary);
         if (aiResult.rawAsr) {
-          setRawHeard(aiResult.rawAsr);
+          setRawHeard(contextEngine.sanitizeChildSafeText(aiResult.rawAsr));
         }
         if (aiResult.wavPath) {
           setLastWavPath(aiResult.wavPath);
         }
         const resolvedFromAi = contextEngine.resolveUtterance({
-          rawInput: aiResult.primary,
+          rawInput: safePrimary,
           audioFeatures,
           partnerContext: '',
           learnedPatterns: currentPatterns,

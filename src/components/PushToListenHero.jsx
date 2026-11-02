@@ -16,66 +16,57 @@ export default function PushToListenHero({
   onChangeVoice = () => {}
 }) {
   const closestPhrase = topOption ? topOption.phrase : 'Push Listen and speak when ready';
+  const activeText = isListening && interimText ? interimText : closestPhrase;
+  const charCount = (activeText || '').length;
+
+  // Adaptive font sizing so long sentences or pasted passages never fill up or stretch the screen
+  const adaptiveTextSizeClass =
+    charCount > 120
+      ? 'text-base sm:text-lg font-semibold leading-relaxed'
+      : charCount > 55
+        ? 'text-lg sm:text-xl font-bold leading-snug'
+        : 'text-xl sm:text-2xl font-extrabold leading-snug';
 
   return (
     <section
       aria-label="Push to Listen and Say It Out"
       className="w-full max-w-5xl mx-auto my-auto bg-slate-900 border-2 border-slate-800 rounded-3xl p-5 sm:p-8 shadow-2xl"
     >
-      <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-stretch min-h-[340px] sm:min-h-[400px]">
-        {/* LEFT SIDE: 1. PUSH TO LISTEN (START / STOP TOGGLE — NEVER CUTS OFF ON PAUSES) */}
+      <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-stretch min-h-[340px] sm:min-h-[390px]">
+        {/* LEFT SIDE: 1. PUSH TO LISTEN (START / STOP TOGGLE — NEVER CUTS OFF ON PAUSES OR "UH") */}
         <div className="md:col-span-5 flex flex-col">
           <button
             type="button"
             data-testid="push-to-listen-btn"
             onClick={onPushToListen}
-            disabled={isTranscribing}
             className={`w-full flex-1 rounded-3xl p-6 flex flex-col items-center justify-center text-center transition-all duration-200 border-4 shadow-xl active:scale-[0.98] ${
               isListening
                 ? 'bg-rose-600 hover:bg-rose-500 border-rose-300 text-white ring-4 ring-rose-500/30'
-                : isTranscribing
-                  ? 'bg-slate-800 border-slate-600 text-slate-300 cursor-wait'
-                  : 'bg-sky-500 hover:bg-sky-400 border-sky-300 text-slate-950'
+                : 'bg-sky-500 hover:bg-sky-400 border-sky-300 text-slate-950'
             }`}
           >
             <div
               className={`w-24 h-24 sm:w-28 sm:h-28 rounded-full flex items-center justify-center mb-4 shadow-lg transition-transform ${
                 isListening
                   ? 'bg-white text-rose-600 animate-pulse scale-110'
-                  : isTranscribing
-                    ? 'bg-slate-900 text-amber-400'
-                    : 'bg-slate-950 text-sky-400'
+                  : 'bg-slate-950 text-sky-400'
               }`}
             >
-              {isTranscribing ? (
-                <Loader2 className="w-12 h-12 sm:w-14 sm:h-14 animate-spin" />
-              ) : (
-                <Mic className="w-12 h-12 sm:w-14 sm:h-14" />
-              )}
+              <Mic className="w-12 h-12 sm:w-14 sm:h-14" />
             </div>
 
             <span className="text-2xl sm:text-3xl font-black tracking-tight leading-tight">
-              {isListening
-                ? 'Listening... Push When Done'
-                : isTranscribing
-                  ? 'Writing What You Said...'
-                  : '1. Push to Listen'}
+              {isListening ? 'Listening... Push When Done' : '1. Push to Listen'}
             </span>
 
             <span
               className={`text-sm sm:text-base font-semibold mt-2 ${
-                isListening
-                  ? 'text-rose-100'
-                  : isTranscribing
-                    ? 'text-slate-400'
-                    : 'text-slate-900'
+                isListening ? 'text-rose-100' : 'text-slate-900'
               }`}
             >
               {isListening
                 ? 'Take all the time you need — pauses will not stop me!'
-                : isTranscribing
-                  ? 'Decoding your full sentence...'
-                  : 'Push once to start talking, push again when finished'}
+                : 'Push once to start talking, push again when finished'}
             </span>
 
             {isListening && (
@@ -97,13 +88,26 @@ export default function PushToListenHero({
           </button>
         </div>
 
-        {/* RIGHT SIDE: WHAT IT HEARD + VOICE SELECTOR + 2. PUSH TO SAY IT OUT */}
+        {/* RIGHT SIDE: WHAT IT HEARD RIGHT AWAY -> RECALIBRATES TO WHAT I THINK YOU MEAN */}
         <div className="md:col-span-7 flex flex-col justify-between bg-slate-950 border-4 border-amber-400/90 rounded-3xl p-6 sm:p-8 shadow-xl">
           <div>
             <div className="flex items-center justify-between gap-2 mb-3">
-              <span className="text-xs sm:text-sm font-black uppercase tracking-widest text-amber-400">
-                What I Heard You Say:
-              </span>
+              <div className="flex items-center gap-2">
+                <span className="text-xs sm:text-sm font-black uppercase tracking-widest text-amber-400">
+                  {isListening
+                    ? 'What I Heard You Say (Live):'
+                    : isTranscribing
+                      ? 'What I Heard (Recalibrating...):'
+                      : 'What I Think You Mean:'}
+                </span>
+                {isTranscribing && (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 text-xs font-bold border border-amber-400/40">
+                    <Loader2 className="w-3 h-3 animate-spin" />
+                    Recalibrating
+                  </span>
+                )}
+              </div>
+
               <button
                 type="button"
                 data-testid="hero-edit-btn"
@@ -116,31 +120,27 @@ export default function PushToListenHero({
               </button>
             </div>
 
-            {/* Large Single Written Output */}
+            {/* Bounded, Adaptive-Size Written Output Box */}
             <div
               data-testid="closest-match-text"
-              className="text-3xl sm:text-4xl md:text-5xl font-black text-white tracking-tight leading-tight my-2 py-6 px-6 rounded-2xl bg-slate-900 border-2 border-slate-800 min-h-[145px] flex items-center"
+              className={`${adaptiveTextSizeClass} text-white tracking-tight my-2 py-4 px-5 rounded-2xl bg-slate-900 border-2 border-slate-800 min-h-[125px] max-h-[185px] overflow-y-auto flex items-center`}
             >
               {isListening ? (
                 interimText ? (
                   <span className="text-sky-300">"{interimText}"</span>
                 ) : (
-                  <span className="text-slate-400 text-2xl sm:text-3xl animate-pulse">
+                  <span className="text-slate-400 text-lg sm:text-xl animate-pulse">
                     Listening... speak now
                   </span>
                 )
-              ) : isTranscribing ? (
-                <span className="text-slate-400 text-2xl sm:text-3xl animate-pulse">
-                  Listening to your recording...
-                </span>
               ) : (
-                `"${closestPhrase}"`
+                <span>"{closestPhrase}"</span>
               )}
             </div>
           </div>
 
           {/* Voice Selector + Big Push to Say It Out Button */}
-          <div className="mt-5 space-y-3">
+          <div className="mt-4 space-y-3">
             {voices.length > 0 && (
               <div className="flex items-center gap-2 bg-slate-900 px-3.5 py-2 rounded-xl border border-slate-800">
                 <label
@@ -168,15 +168,15 @@ export default function PushToListenHero({
             <button
               type="button"
               data-testid="say-it-out-btn"
-              disabled={isTranscribing || isListening}
+              disabled={isListening}
               onClick={() => onSayItOut(topOption || { phrase: closestPhrase })}
-              className={`w-full py-5 px-6 rounded-2xl font-black text-xl sm:text-2xl flex items-center justify-center gap-3 shadow-lg transition-all active:scale-[0.98] ${
+              className={`w-full py-4 sm:py-5 px-6 rounded-2xl font-black text-xl sm:text-2xl flex items-center justify-center gap-3 shadow-lg transition-all active:scale-[0.98] ${
                 isSpeaking
                   ? 'bg-emerald-400 text-slate-950 ring-4 ring-emerald-400/30'
                   : 'bg-amber-400 hover:bg-amber-300 text-slate-950 disabled:opacity-50'
               }`}
             >
-              <Volume2 className={`w-8 h-8 ${isSpeaking ? 'animate-bounce' : ''}`} />
+              <Volume2 className={`w-7 h-7 sm:w-8 sm:h-8 ${isSpeaking ? 'animate-bounce' : ''}`} />
               <span>{isSpeaking ? 'Speaking Out Loud...' : '2. Push to Say It Out'}</span>
             </button>
           </div>

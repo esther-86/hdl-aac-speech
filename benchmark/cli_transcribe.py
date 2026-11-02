@@ -10,6 +10,7 @@ from transcribe_engine import (
     normalize_text,
     text_similarity,
     apply_phonological_rules,
+    sanitize_child_safe_text,
 )
 
 def load_learned_memory():
@@ -56,8 +57,8 @@ def transcribe_wav_file(wav_path, model=None, browser_hint=""):
         reason = "Phonological audio decode"
 
     return {
-        "primary": primary,
-        "rawAsr": raw_asr,
+        "primary": sanitize_child_safe_text(primary),
+        "rawAsr": sanitize_child_safe_text(raw_asr),
         "reason": reason,
         "provider": "local-faster-whisper-small"
     }

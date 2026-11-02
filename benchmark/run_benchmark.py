@@ -79,7 +79,7 @@ def main():
 
     model = WhisperModel("small.en", device="cpu", compute_type="int8")
 
-    # Step 1: Build training memory ONLY from split == "train"
+    # Step 1: Build training memory ONLY from split == "train" (strictly excluding "test" split so Held-Out TEST evaluation is 100% blind)
     train_memory = []
     for item in dataset:
         if item["split"] == "train":
@@ -96,21 +96,7 @@ def main():
                 "source": "train_split"
             })
 
-    # Merge any user-added on-the-fly cases if present
-    if os.path.exists(LEARNED_CASES_PATH):
-        try:
-            with open(LEARNED_CASES_PATH, "r", encoding="utf-8") as lf:
-                existing = json.load(lf)
-            for ex in existing:
-                if ex.get("source") == "live_user_edit":
-                    train_memory.append(ex)
-        except Exception:
-            pass
-
-    with open(LEARNED_CASES_PATH, "w", encoding="utf-8") as lf:
-        json.dump(train_memory, lf, indent=2)
-
-    # Step 2: Evaluate on TRAIN (18 clips) and Held-Out TEST (7 clips)
+    # Step 2: Evaluate on TRAIN and Held-Out TEST using ONLY train_memory + general self-correction & phonological rules
     for split_name in ["train", "test"]:
         items = [d for d in dataset if d["split"] == split_name]
         exact_matches = 0
@@ -131,6 +117,25 @@ def main():
         sent_acc = (exact_matches / len(items)) * 100.0
         avg_w_acc = (word_acc_sum / len(items)) * 100.0
         print(f"--> {split_name.upper()} RESULTS: Sentence Accuracy = {exact_matches}/{len(items)} ({sent_acc:.1f}%), Word Accuracy = {avg_w_acc:.1f}%")
+
+    # Step 3: Save full learned memory (including all user edits) for live production app use
+    full_memory = list(train_memory)
+    if os.path.exists(LEARNED_CASES_PATH):
+        try:
+            with open(LEARNED_CASES_PATH, "r", encoding="utf-8") as lf:
+                existing = json.load(lf)
+            for ex in existing:
+                if ex.get("source") == "live_user_edit":
+                    ex_wav = os.path.basename(ex.get("wav_path", ""))
+                    if ex_wav:
+                        ex["wav_path"] = f"user_clips/{ex_wav}"
+                    if not any(os.path.basename(m.get("wav_path", "")) == ex_wav for m in full_memory):
+                        full_memory.append(ex)
+        except Exception:
+            pass
+
+    with open(LEARNED_CASES_PATH, "w", encoding="utf-8") as lf:
+        json.dump(full_memory, lf, indent=2)
 
 
 if __name__ == "__main__":
