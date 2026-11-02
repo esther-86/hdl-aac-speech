@@ -26,9 +26,10 @@ def transcribe_wav_file(wav_path, model=None, browser_hint=""):
     if model is None:
         model = WhisperModel("small.en", device="cpu", compute_type="int8")
 
-    segs, _ = model.transcribe(wav_path, beam_size=5, vad_filter=True)
+    # Use vad_filter=False to match training/registration 100% so identical audio always yields identical ASR & acoustic match
+    segs, _ = model.transcribe(wav_path, beam_size=5, vad_filter=False)
     raw_asr = " ".join(s.text.strip() for s in segs).strip()
-    if browser_hint and (not raw_asr or len(browser_hint.strip()) > len(raw_asr) * 1.3):
+    if not raw_asr and browser_hint:
         raw_asr = browser_hint.strip()
 
     sig = compute_mfcc_signature(wav_path)
@@ -36,22 +37,30 @@ def transcribe_wav_file(wav_path, model=None, browser_hint=""):
 
     best_mem = None
     best_score = 0.0
-    if raw_asr:
-        for mem in memory:
-            t_sim = text_similarity(raw_asr, mem.get("raw_asr", ""))
-            if t_sim < 0.82:
-                continue
-            a_sim = acoustic_similarity(sig, mem.get("acoustic_sig"))
-            score = t_sim * 0.85 + a_sim * 0.15
-            if normalize_text(raw_asr) == normalize_text(mem.get("raw_asr", "")):
-                score = 0.98
-            if score > best_score:
-                best_score = score
-                best_mem = mem
+    for mem in memory:
+        t_sim = text_similarity(raw_asr, mem.get("raw_asr", "")) if raw_asr else 0.0
+        a_sim = acoustic_similarity(sig, mem.get("acoustic_sig"))
 
-    if best_mem and best_score >= 0.84:
+        # 1. Exact or near-exact audio recording match (same audio sent again)
+        if a_sim >= 0.94 and (t_sim >= 0.50 or not raw_asr):
+            score = a_sim
+        elif not raw_asr:
+            score = a_sim * 0.90
+        else:
+            score = t_sim * 0.78 + a_sim * 0.22
+            if normalize_text(raw_asr) and normalize_text(raw_asr) == normalize_text(mem.get("raw_asr", "")):
+                if len(normalize_text(raw_asr).split()) <= 2:
+                    score = t_sim * 0.45 + a_sim * 0.55
+                else:
+                    score = 0.99
+
+        if score > best_score:
+            best_score = score
+            best_mem = mem
+
+    if best_mem and best_score >= 0.76:
         primary = best_mem["target"]
-        reason = "Learned speech case"
+        reason = f"Learned speech case (score={best_score:.2f})"
     else:
         primary = apply_phonological_rules(raw_asr, memory)
         reason = "Phonological audio decode"

@@ -1,6 +1,7 @@
 import os
 import re
 import json
+import difflib
 import numpy as np
 from scipy.io import wavfile
 
@@ -233,6 +234,39 @@ def repair_self_corrections(raw_text):
     return text
 
 
+def extract_aligned_subrules(learned_cases):
+    """Automatically learn word/phrase substitution rules by aligning (raw_asr -> target) pairs in learned_cases."""
+    subrules = []
+    if not learned_cases:
+        return subrules
+    for case in learned_cases:
+        raw_asr = (case.get("raw_asr") or "").strip()
+        target = (case.get("target") or "").strip()
+        if not raw_asr or not target:
+            continue
+        rw = raw_asr.split()
+        tw = target.split()
+        if len(rw) < 3 or len(tw) < 3:
+            continue
+        matcher = difflib.SequenceMatcher(None, [normalize_text(w) for w in rw], [normalize_text(w) for w in tw])
+        for tag, i1, i2, j1, j2 in matcher.get_opcodes():
+            if tag == "replace":
+                src_span = " ".join(rw[i1:i2]).strip(" ,.?!\"'")
+                dst_span = " ".join(tw[j1:j2]).strip(" ,.?!\"'")
+                # Include 1 word of left/right context if available so replacement is context-safe
+                ctx_i1 = max(0, i1 - 1)
+                ctx_i2 = min(len(rw), i2 + 1)
+                ctx_j1 = max(0, j1 - (i1 - ctx_i1))
+                ctx_j2 = min(len(tw), j2 + (ctx_i2 - i2))
+                ctx_src = " ".join(rw[ctx_i1:ctx_i2]).strip(" ,.?!\"'")
+                ctx_dst = " ".join(tw[ctx_j1:ctx_j2]).strip(" ,.?!\"'")
+                if len(normalize_text(ctx_src)) >= 5 and normalize_text(ctx_src) != normalize_text(ctx_dst):
+                    subrules.append((ctx_src, ctx_dst))
+                elif len(normalize_text(src_span)) >= 5 and normalize_text(src_span) != normalize_text(dst_span):
+                    subrules.append((src_span, dst_span))
+    return subrules
+
+
 def apply_phonological_rules(raw_text, learned_cases=None):
     if not raw_text:
         return ""
@@ -251,7 +285,13 @@ def apply_phonological_rules(raw_text, learned_cases=None):
     # 2. Repair mid-sentence self-corrections & false starts (e.g. "say ... share", "main? She does library")
     text = repair_self_corrections(text)
 
-    # 3. Apply general phonological phrase patterns
+    # 3. Apply auto-extracted span alignment rules learned from user corrections
+    if learned_cases:
+        for src_span, dst_span in extract_aligned_subrules(learned_cases):
+            esc = re.escape(src_span)
+            text = re.sub(rf"\b{esc}\b", dst_span, text, flags=re.IGNORECASE)
+
+    # 4. Apply general phonological phrase patterns
     for pattern, repl in PHONOLOGICAL_PHRASE_RULES:
         text = re.sub(pattern, repl, text, flags=re.IGNORECASE)
 
